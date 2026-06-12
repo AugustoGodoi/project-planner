@@ -2,6 +2,13 @@
 //  pages/project-form.js
 // ============================================================
 
+// Reutiliza getAvailableUsers de admin.js (carregado depois)
+// Fallback para MOCK_USERS se admin ainda não estiver disponível
+function _getFormUsers() {
+  if (typeof getAvailableUsers === "function") return _getFormUsers();
+  return typeof MOCK_USERS !== "undefined" ? MOCK_USERS : [];
+}
+
 window.openProjectForm = function(projectId) {
   const isNew = !projectId;
   const p = isNew ? App.createProject() : App.getProject(projectId);
@@ -65,7 +72,7 @@ window.openProjectForm = function(projectId) {
       <div class="field">
         <label>${App.t("owner")}</label>
         <select id="pf-owner" class="input">
-          ${MOCK_USERS.map(u=>
+          ${_getFormUsers().map(u=>
             `<option value="${u.id}" ${u.id===p.ownerId?"selected":""}>${u.name}</option>`
           ).join("")}
         </select>
@@ -80,7 +87,7 @@ window.openProjectForm = function(projectId) {
       <div style="display:flex;gap:8px;align-items:center">
         <select id="pf-member-sel" class="input" style="flex:1">
           <option value="">Selecionar membro…</option>
-          ${MOCK_USERS.map(u=>
+          ${_getFormUsers().map(u=>
             `<option value="${u.id}">${u.name}</option>`
           ).join("")}
         </select>
@@ -152,7 +159,7 @@ window.saveProjectForm = function(pid, isNew) {
   if (!name) { document.getElementById("pf-name").focus(); return; }
 
   const ownerId  = document.getElementById("pf-owner").value;
-  const owner    = MOCK_USERS.find(u=>u.id===ownerId);
+  const owner    = _getFormUsers().find(u=>u.id===ownerId);
   const existing = App.getProject(pid);
 
   const project = {
