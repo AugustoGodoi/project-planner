@@ -369,6 +369,7 @@ async function startApp() {
   Router.register("/projects",    renderProjectList);
   Router.register("/project/new", ()=>openProjectForm(null));
   Router.register("/project/:id", renderProjectGantt);
+  Router.register("/admin",       renderAdmin);
 
   await Router.resolve();
 }
@@ -401,7 +402,7 @@ window.openSettings = function() {
 };
 
 window.App = {
-  state: AppState, t,
+  state: AppState, t, uid,
   saveProject, deleteProject, getProject,
   createProject, createTask,
   projectProgress, isOverdue, isDueSoon, taskDotColor,
