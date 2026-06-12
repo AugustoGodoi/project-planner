@@ -34,9 +34,43 @@
           "order": 0,
           "createdAt": "2026-06-12T13:40:26.010Z",
           "updatedAt": "2026-06-12T13:40:26.010Z"
+        },
+        {
+          "id": "mqaz5e60knh624uuub",
+          "parentId": "mqaz4v16hp2hj9g7x8",
+          "name": "3D MODEL",
+          "notes": "",
+          "startDate": "2026-06-12",
+          "endDate": "2026-06-19",
+          "assigneeId": "u1",
+          "assigneeName": "Augusto Silva",
+          "progress": 0,
+          "status": "not_started",
+          "isMilestone": false,
+          "dependencies": [],
+          "order": 1,
+          "createdAt": "2026-06-12T13:40:50.808Z",
+          "updatedAt": "2026-06-12T13:40:50.808Z"
+        },
+        {
+          "id": "mqaz68dgz0dtsbisjl",
+          "parentId": "mqaz4v16hp2hj9g7x8",
+          "name": "2D - DRAWINGS",
+          "notes": "",
+          "startDate": "2026-06-12",
+          "endDate": "2026-07-03",
+          "assigneeId": "u1",
+          "assigneeName": "Augusto Silva",
+          "progress": 0,
+          "status": "not_started",
+          "isMilestone": false,
+          "dependencies": [],
+          "order": 2,
+          "createdAt": "2026-06-12T13:41:29.956Z",
+          "updatedAt": "2026-06-12T13:41:29.956Z"
         }
       ],
-      "updatedAt": "2026-06-12T13:40:26.010Z"
+      "updatedAt": "2026-06-12T13:41:29.956Z"
     }
   ]
 }
