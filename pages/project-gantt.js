@@ -2,9 +2,28 @@
 //  pages/project-gantt.js
 // ============================================================
 
-let _ganttScale = "week"; // "day" | "week" | "month"
+let _ganttScale = "week";
 let _ganttCollapsed = new Set();
 
+// ── Helpers de data ──────────────────────────────────────────
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+function daysBetween(a, b) {
+  return Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00")) / 864e5);
+}
+
+function addDays(iso, n) {
+  const d = new Date(iso+"T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
+}
+
+function durationDays(task) {
+  if (!task.startDate || !task.endDate) return null;
+  return daysBetween(task.startDate, task.endDate) + 1;
+}
+
+// ── Renderização principal ───────────────────────────────────
 function renderProjectGantt(parts) {
   App.setActiveNav("/projects");
   const id = parts[1];
@@ -13,10 +32,8 @@ function renderProjectGantt(parts) {
   if (!p) {
     App.renderPage(`<div class="empty-state">
       <i class="ti ti-folder-off"></i>
-      <h3>${App.t("projNotFound")}</h3>
-      <button class="btn btn--secondary" onclick="App.navigate('/projects')">
-        ${App.t("backToProjects")}
-      </button>
+      <h3>Projeto não encontrado</h3>
+      <button class="btn btn--secondary" onclick="App.navigate('/projects')">← Projetos</button>
     </div>`);
     return;
   }
@@ -27,7 +44,6 @@ function renderProjectGantt(parts) {
 
   App.renderPage(`
     <div class="gantt-page">
-      <!-- Topbar do projeto -->
       <div class="gp-topbar">
         <div class="gp-topbar__left">
           <button class="btn btn--ghost btn--sm" onclick="App.navigate('/projects')">
@@ -46,15 +62,14 @@ function renderProjectGantt(parts) {
         </div>
         <div class="gp-topbar__right">
           <button class="btn btn--ghost btn--sm" onclick="openProjectForm('${p.id}')">
-            <i class="ti ti-pencil"></i>${App.t("editProject")}
+            <i class="ti ti-pencil"></i>Editar projeto
           </button>
           <button class="btn btn--primary btn--sm" onclick="openTaskModal(null,'${p.id}')">
-            <i class="ti ti-plus"></i>${App.t("newTask")}
+            <i class="ti ti-plus"></i>Nova tarefa
           </button>
         </div>
       </div>
 
-      <!-- Escala -->
       <div class="gp-scalebar">
         <div class="scale-btns">
           ${["day","week","month"].map(s=>`
@@ -67,12 +82,11 @@ function renderProjectGantt(parts) {
           ${statusDot("gray",`${stats.notStarted} não iniciadas`)}
           ${stats.overdue>0?statusDot("red",`${stats.overdue} atrasadas`):""}
           <span style="font-size:12px;color:var(--c-text-2);margin-left:8px;">
-            ${App.t("conclusaoGeral")}: <strong>${pct}%</strong>
+            Conclusão geral: <strong>${pct}%</strong>
           </span>
         </div>
       </div>
 
-      <!-- Split: tabela WBS + Gantt -->
       <div class="gantt-split" id="gantt-split-${p.id}">
         ${renderGanttInner(p, tasks)}
       </div>
@@ -96,44 +110,57 @@ function renderProjectGantt(parts) {
       .gp-stats{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
       .stat-dot{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--c-text-2);}
 
-      /* Gantt split */
+      /* Split */
       .gantt-split{display:flex;border:1px solid var(--c-border);border-top:none;
-        border-radius:0 0 var(--r-lg) var(--r-lg);overflow:hidden;background:var(--c-surface);}
-      .gantt-table{width:300px;min-width:300px;border-right:1px solid var(--c-border);
+        border-radius:0 0 var(--r-lg) var(--r-lg);overflow:hidden;
+        background:var(--c-surface);min-height:200px;}
+
+      /* Tabela WBS — largura maior para caber nome + datas + % */
+      .gantt-table{width:420px;min-width:420px;border-right:1px solid var(--c-border);
         display:flex;flex-direction:column;flex-shrink:0;}
-      .gantt-table__head{display:grid;grid-template-columns:1fr 72px 46px;
-        padding:6px 10px;border-bottom:1px solid var(--c-border);background:var(--c-surface-2);}
-      .gantt-table__head span{font-size:11px;color:var(--c-text-2);font-weight:500;}
+      .gantt-table__head{display:grid;grid-template-columns:1fr 56px 52px 38px 36px;
+        padding:6px 10px;border-bottom:1px solid var(--c-border);
+        background:var(--c-surface-2);gap:2px;}
+      .gantt-table__head span{font-size:11px;color:var(--c-text-2);font-weight:500;
+        white-space:nowrap;overflow:hidden;}
       .gantt-rows{flex:1;overflow-y:auto;overflow-x:hidden;}
-      .gt-row{display:grid;grid-template-columns:1fr 72px 46px;padding:0 10px;
-        height:34px;align-items:center;border-bottom:1px solid var(--c-border);
-        font-size:12px;transition:background .1s;}
+
+      /* Linha de tarefa — altura fixa 34px */
+      .gt-row{display:grid;grid-template-columns:1fr 56px 52px 38px 36px;
+        padding:0 10px;height:34px;align-items:center;
+        border-bottom:1px solid var(--c-border);font-size:11px;
+        transition:background .1s;gap:2px;}
       .gt-row:hover{background:var(--c-surface-2);}
       .gt-row--parent{background:var(--c-surface-2);font-weight:500;}
       .gt-row--parent:hover{background:#eae8e2;}
-      .gt-name{display:flex;align-items:center;gap:5px;overflow:hidden;cursor:pointer;}
+      .gt-name{display:flex;align-items:center;gap:4px;overflow:hidden;cursor:pointer;min-width:0;}
       .gt-name span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
       .gt-indent{display:inline-block;flex-shrink:0;}
-      .gt-chevron{font-size:11px;color:var(--c-text-3);cursor:pointer;flex-shrink:0;transition:transform .15s;}
+      .gt-chevron{font-size:11px;color:var(--c-text-3);cursor:pointer;
+        flex-shrink:0;transition:transform .15s;}
       .gt-chevron--collapsed{transform:rotate(-90deg);}
       .gt-milestone-icon{font-size:12px;color:#5B3FBF;flex-shrink:0;}
-      .gt-date{font-size:11px;color:var(--c-text-2);}
-      .gt-pct{font-size:11px;color:var(--c-text-2);text-align:right;}
+      .gt-cell{font-size:10px;color:var(--c-text-3);white-space:nowrap;overflow:hidden;}
+      .gt-pct{font-size:10px;color:var(--c-text-2);text-align:right;}
 
-      /* Gantt chart area */
-      .gantt-chart{flex:1;overflow:auto;display:flex;flex-direction:column;}
+      /* Chart */
+      .gantt-chart{flex:1;overflow:auto;display:flex;flex-direction:column;min-width:0;}
       .gantt-header{flex-shrink:0;}
       .gantt-months{display:flex;border-bottom:1px solid var(--c-border);
         background:var(--c-surface-2);}
-      .gantt-month-cell{flex:1;text-align:center;font-size:11px;font-weight:500;
-        color:var(--c-text-2);padding:4px 0;border-right:1px solid var(--c-border);}
+      .gantt-month-cell{text-align:center;font-size:11px;font-weight:500;
+        color:var(--c-text-2);padding:4px 0;border-right:1px solid var(--c-border);
+        flex:none;}
       .gantt-months-2{display:flex;border-bottom:1px solid var(--c-border);}
-      .gantt-sub-cell{flex:1;text-align:center;font-size:10px;color:var(--c-text-3);
-        padding:3px 0;border-right:1px solid var(--c-border);}
+      .gantt-sub-cell{text-align:center;font-size:10px;color:var(--c-text-3);
+        padding:3px 0;border-right:1px solid var(--c-border);flex:none;}
       .gantt-body{position:relative;flex:1;}
+
+      /* Linha do Gantt — mesma altura 34px da tabela */
       .gantt-bar-row{position:relative;height:34px;border-bottom:1px solid var(--c-border);}
       .gantt-bar-row:hover{background:rgba(0,0,0,.02);}
-      .gantt-grid-line{position:absolute;top:0;bottom:0;width:1px;background:var(--c-border);opacity:.6;}
+      .gantt-grid-line{position:absolute;top:0;bottom:0;width:1px;
+        background:var(--c-border);opacity:.6;}
       .gantt-today-line{position:absolute;top:0;bottom:0;width:2px;
         background:var(--c-red);opacity:.5;z-index:2;}
       .g-bar{position:absolute;top:8px;height:18px;border-radius:3px;
@@ -146,8 +173,6 @@ function renderProjectGantt(parts) {
       .g-milestone{position:absolute;top:9px;width:16px;height:16px;
         transform:rotate(45deg);background:#5B3FBF;border-radius:2px;cursor:pointer;}
       .g-milestone:hover{opacity:.8;}
-
-      /* Dep arrows */
       .dep-svg{position:absolute;top:0;left:0;width:100%;height:100%;
         pointer-events:none;overflow:visible;z-index:3;}
     </style>
@@ -159,69 +184,58 @@ function renderProjectGantt(parts) {
   };
 }
 
-// ── Build WBS ────────────────────────────────────────────────
+// ── WBS ──────────────────────────────────────────────────────
 function buildWBS(tasks) {
-  // separa raiz e filhos
-  const roots = tasks.filter(t => !t.parentId).sort((a,b)=>a.order-b.order);
+  const roots = tasks.filter(t=>!t.parentId).sort((a,b)=>a.order-b.order);
   const result = [];
   function add(t, depth) {
-    result.push({ ...t, _depth: depth });
+    result.push({...t, _depth:depth});
     if (_ganttCollapsed.has(t.id)) return;
     tasks.filter(c=>c.parentId===t.id).sort((a,b)=>a.order-b.order)
-      .forEach(c=>add(c, depth+1));
+         .forEach(c=>add(c, depth+1));
   }
   roots.forEach(r=>add(r,0));
   return result;
 }
 
-// ── Calcular dimensões do Gantt ──────────────────────────────
+// ── Dimensões ────────────────────────────────────────────────
 function calcGanttDimensions(tasks) {
   const dates = tasks.flatMap(t=>[t.startDate,t.endDate]).filter(Boolean).sort();
-  let minD = dates[0]||todayStr();
-  let maxD = dates[dates.length-1]||todayStr();
-
-  // garantir margem
+  const minD  = dates[0] || todayStr();
+  const maxD  = dates[dates.length-1] || todayStr();
   const mStart = new Date(minD+"T00:00:00");
   mStart.setDate(mStart.getDate()-7);
   const mEnd = new Date(maxD+"T00:00:00");
   mEnd.setDate(mEnd.getDate()+14);
-
-  // alinhar ao início da semana/mês conforme escala
   if (_ganttScale==="week"||_ganttScale==="day") {
     mStart.setDate(mStart.getDate()-mStart.getDay());
-  } else {
-    mStart.setDate(1);
-  }
-
-  const spanDays = Math.max(1, (mEnd-mStart)/864e5);
-  return { startDate: mStart, endDate: mEnd, spanDays };
+  } else { mStart.setDate(1); }
+  const spanDays = Math.max(1,(mEnd-mStart)/864e5);
+  return {startDate:mStart, endDate:mEnd, spanDays};
 }
 
 function dateToX(date, dim) {
   return (date-dim.startDate)/864e5/dim.spanDays*100;
 }
 
-function todayStr() {
-  return new Date().toISOString().slice(0,10);
-}
-
-// ── Render Gantt Inner ────────────────────────────────────────
+// ── Inner render ─────────────────────────────────────────────
 function renderGanttInner(p, tasks) {
-  const dim = calcGanttDimensions(p.tasks||[]);
+  const dim  = calcGanttDimensions(p.tasks||[]);
   const cols = buildCols(dim);
+  const ROW_H = 34;
 
-  // Table rows
+  // ── Tabela esquerda ──
   const tableRows = tasks.map(t => {
-    const isParent = (p.tasks||[]).some(c=>c.parentId===t.id);
+    const hasChildren = (p.tasks||[]).some(c=>c.parentId===t.id);
     const isCollapsed = _ganttCollapsed.has(t.id);
-    const hasChildren = isParent;
     const indent = t._depth * 14;
     const dc = App.taskDotColor(t);
-    const dotColor = {green:"var(--c-green)",blue:"var(--c-blue)",amber:"var(--c-amber)",
-      red:"var(--c-red)",gray:"#B4B2A9"}[dc];
+    const dotColor = {green:"var(--c-green)",blue:"var(--c-blue)",
+      amber:"var(--c-amber)",red:"var(--c-red)",gray:"#B4B2A9"}[dc];
+    const dur = durationDays(t);
+    const durLabel = dur ? `${dur}d` : "—";
 
-    return `<div class="gt-row ${t._depth===0&&hasChildren?"gt-row--parent":""}"
-                 data-id="${t.id}">
+    return `<div class="gt-row ${t._depth===0&&hasChildren?"gt-row--parent":""}" data-id="${t.id}">
       <div class="gt-name" onclick="onTaskRowClick('${t.id}','${p.id}')">
         <span class="gt-indent" style="width:${indent}px"></span>
         ${hasChildren
@@ -230,25 +244,27 @@ function renderGanttInner(p, tasks) {
           : `<span style="width:14px;flex-shrink:0"></span>`}
         ${t.isMilestone
           ? `<i class="ti ti-diamond gt-milestone-icon"></i>`
-          : `<span class="dot" style="background:${dotColor};flex-shrink:0"></span>`}
+          : `<span class="dot" style="background:${dotColor};width:7px;height:7px;flex-shrink:0"></span>`}
         <span title="${t.name}">${t.name}</span>
       </div>
-      <div class="gt-date">${App.formatDate(t.endDate)}</div>
+      <div class="gt-cell">${App.formatDate(t.startDate)}</div>
+      <div class="gt-cell">${App.formatDate(t.endDate)}</div>
+      <div class="gt-cell" style="text-align:center">${durLabel}</div>
       <div class="gt-pct">${t.isMilestone?"◆":(t.progress||0)+"%"}</div>
     </div>`;
   }).join("");
 
-  // Header months
-  const monthsHtml = buildMonthHeader(cols, dim);
+  // ── Cabeçalho do Gantt ──
+  const monthsHtml = buildMonthHeader(cols);
   const subsHtml   = buildSubHeader(cols);
 
-  // Bar rows + grid lines
-  const totalH = tasks.length * 34;
+  // ── Body ──
+  const totalH = tasks.length * ROW_H;
   const gridLines = cols.gridLines.map(x=>
     `<div class="gantt-grid-line" style="left:${x.toFixed(2)}%"></div>`).join("");
   const todayX = dateToX(new Date(), dim);
   const todayLine = todayX>=0&&todayX<=100
-    ? `<div class="gantt-today-line" style="left:${todayX.toFixed(2)}%"></div>`:"";
+    ? `<div class="gantt-today-line" style="left:${todayX.toFixed(2)}%"></div>` : "";
 
   const barRows = tasks.map((t,i) => {
     if (!t.startDate || !t.endDate) return `<div class="gantt-bar-row"></div>`;
@@ -265,11 +281,8 @@ function renderGanttInner(p, tasks) {
 
     const dc = App.taskDotColor(t);
     const colors = {
-      green:  ["#C8EDD9","#1A8C5B"],
-      blue:   ["#C5DFF7","#1E6FD9"],
-      amber:  ["#FAD79A","#B86A00"],
-      red:    ["#F7BFBF","#C42B2B"],
-      gray:   ["#DDD9D3","#6B6860"],
+      green:["#C8EDD9","#1A8C5B"], blue:["#C5DFF7","#1E6FD9"],
+      amber:["#FAD79A","#B86A00"], red:["#F7BFBF","#C42B2B"], gray:["#DDD9D3","#6B6860"],
     };
     const [barBg, barFg] = colors[dc]||colors.blue;
 
@@ -283,19 +296,22 @@ function renderGanttInner(p, tasks) {
     </div>`;
   }).join("");
 
-  // Dependency arrows SVG
-  const depSvg = buildDepSvg(tasks, p, dim);
+  const depSvg = buildDepSvg(tasks, dim);
 
   return `
     <div class="gantt-table">
       <div class="gantt-table__head">
-        <span>Tarefa</span><span>Término</span><span style="text-align:right">%</span>
+        <span>Tarefa</span>
+        <span>Início</span>
+        <span>Término</span>
+        <span style="text-align:center">Dur.</span>
+        <span style="text-align:right">%</span>
       </div>
       <div class="gantt-rows" id="gt-rows">${tableRows}</div>
     </div>
     <div class="gantt-chart" id="g-chart">
       <div class="gantt-header">
-        <div class="gantt-months">${monthsHtml}</div>
+        <div class="gantt-months" style="position:relative;min-height:24px">${monthsHtml}</div>
         <div class="gantt-months-2">${subsHtml}</div>
       </div>
       <div class="gantt-body" style="height:${totalH}px;min-height:${totalH}px">
@@ -305,108 +321,89 @@ function renderGanttInner(p, tasks) {
     </div>`;
 }
 
-// ── Colunas do cabeçalho ─────────────────────────────────────
+// ── Colunas cabeçalho ────────────────────────────────────────
 function buildCols(dim) {
-  const months = [];
-  const subs   = [];
-  const gridLines = [];
-  const cur = new Date(dim.startDate);
-
-  if (_ganttScale === "month") {
-    while (cur <= dim.endDate) {
-      const label = cur.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"});
-      const x = dateToX(cur, dim);
-      const next = new Date(cur); next.setMonth(next.getMonth()+1);
-      const w = dateToX(next,dim)-x;
-      months.push({label,x,w});
+  const months=[], subs=[], gridLines=[];
+  if (_ganttScale==="month") {
+    const cur=new Date(dim.startDate);
+    while(cur<=dim.endDate){
+      const x=dateToX(cur,dim);
+      const next=new Date(cur); next.setMonth(next.getMonth()+1);
+      const w=dateToX(next,dim)-x;
+      months.push({label:cur.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),x,w});
       gridLines.push(x);
       cur.setMonth(cur.getMonth()+1);
     }
     return {months, subs:months.map(m=>({label:"",x:m.x,w:m.w})), gridLines};
   }
-
-  if (_ganttScale === "week") {
-    // agrupa semanas por mês
-    const monthMap = new Map();
-    const c2 = new Date(dim.startDate);
-    while (c2 <= dim.endDate) {
-      const mk = c2.getFullYear()+"-"+c2.getMonth();
-      if (!monthMap.has(mk)) monthMap.set(mk, {label:c2.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}), x:dateToX(c2,dim), end:c2.getTime()});
-      monthMap.get(mk).end = c2.getTime();
-      const wx = dateToX(c2,dim);
-      subs.push({label:`S${Math.ceil((c2.getDate())/7)}`, x:wx, w:7/dim.spanDays*100});
+  if (_ganttScale==="week") {
+    const monthMap=new Map(), c2=new Date(dim.startDate);
+    while(c2<=dim.endDate){
+      const mk=c2.getFullYear()+"-"+c2.getMonth();
+      if(!monthMap.has(mk)) monthMap.set(mk,{label:c2.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),x:dateToX(c2,dim),end:c2.getTime()});
+      monthMap.get(mk).end=c2.getTime();
+      const wx=dateToX(c2,dim);
+      subs.push({label:`S${Math.ceil(c2.getDate()/7)}`,x:wx,w:7/dim.spanDays*100});
       gridLines.push(wx);
       c2.setDate(c2.getDate()+7);
     }
-    monthMap.forEach((v,k) => {
-      const endX = dateToX(new Date(v.end),dim)+7/dim.spanDays*100;
-      months.push({label:v.label, x:v.x, w:endX-v.x});
+    monthMap.forEach(v=>{
+      const endX=dateToX(new Date(v.end),dim)+7/dim.spanDays*100;
+      months.push({label:v.label,x:v.x,w:endX-v.x});
     });
-    return {months, subs, gridLines};
+    return {months,subs,gridLines};
   }
-
   // day
-  const dayMap = new Map();
-  const c3 = new Date(dim.startDate);
-  while (c3 <= dim.endDate) {
-    const mk = c3.getFullYear()+"-"+c3.getMonth();
-    if (!dayMap.has(mk)) dayMap.set(mk, {label:c3.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}), x:dateToX(c3,dim)});
-    const dx = dateToX(c3,dim);
-    subs.push({label:c3.getDate(), x:dx, w:1/dim.spanDays*100});
-    if (c3.getDay()===0) gridLines.push(dx);
+  const dayMap=new Map(), c3=new Date(dim.startDate);
+  while(c3<=dim.endDate){
+    const mk=c3.getFullYear()+"-"+c3.getMonth();
+    if(!dayMap.has(mk)) dayMap.set(mk,{label:c3.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),x:dateToX(c3,dim)});
+    const dx=dateToX(c3,dim);
+    subs.push({label:c3.getDate(),x:dx,w:1/dim.spanDays*100});
+    if(c3.getDay()===0) gridLines.push(dx);
     c3.setDate(c3.getDate()+1);
   }
-  dayMap.forEach(v => months.push({...v, w:0})); // largura calculada no render
-  return {months, subs, gridLines};
+  dayMap.forEach(v=>months.push({...v,w:0}));
+  return {months,subs,gridLines};
 }
 
-function buildMonthHeader(cols, dim) {
+function buildMonthHeader(cols) {
   return cols.months.map(m=>
-    `<div class="gantt-month-cell" style="left:${m.x.toFixed(2)}%;width:${m.w.toFixed(2)}%;
-      position:relative;flex:none">${m.label}</div>`).join("");
+    `<div class="gantt-month-cell" style="width:${m.w.toFixed(2)}%">${m.label}</div>`
+  ).join("");
 }
-
 function buildSubHeader(cols) {
   return cols.subs.map(s=>
-    `<div class="gantt-sub-cell" style="width:${s.w.toFixed(2)}%;flex:none">${s.label}</div>`).join("");
+    `<div class="gantt-sub-cell" style="width:${s.w.toFixed(2)}%">${s.label}</div>`
+  ).join("");
 }
 
 // ── Dep arrows ───────────────────────────────────────────────
-function buildDepSvg(tasks, p, dim) {
-  let svg = `<defs><marker id="arr" markerWidth="6" markerHeight="6"
-    refX="5" refY="3" orient="auto">
+function buildDepSvg(tasks, dim) {
+  let svg=`<defs><marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
     <path d="M0,0 L6,3 L0,6 Z" fill="#9E9B95"/></marker></defs>`;
-
-  tasks.forEach((t,ti) => {
-    (t.dependencies||[]).forEach(dep => {
-      const si = tasks.findIndex(x=>x.id===dep.taskId);
-      if (si<0||!tasks[si].endDate||!t.startDate) return;
-      const sx = dateToX(new Date(tasks[si].endDate+"T23:59:59"),dim);
-      const ex = dateToX(new Date(t.startDate+"T00:00:00"),dim);
-      const sy = si*34+17;
-      const ey = ti*34+17;
-      svg += `<line x1="${sx.toFixed(1)}%" y1="${sy}" x2="${ex.toFixed(1)}%" y2="${ey}"
-        stroke="#B4B2A9" stroke-width="1.5" stroke-dasharray="4,3"
-        marker-end="url(#arr)"/>`;
+  tasks.forEach((t,ti)=>{
+    (t.dependencies||[]).forEach(dep=>{
+      const si=tasks.findIndex(x=>x.id===dep.taskId);
+      if(si<0||!tasks[si].endDate||!t.startDate) return;
+      const sx=dateToX(new Date(tasks[si].endDate+"T23:59:59"),dim);
+      const ex=dateToX(new Date(t.startDate+"T00:00:00"),dim);
+      const sy=si*34+17, ey=ti*34+17;
+      svg+=`<line x1="${sx.toFixed(1)}%" y1="${sy}" x2="${ex.toFixed(1)}%" y2="${ey}"
+        stroke="#B4B2A9" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>`;
     });
   });
   return svg;
 }
 
-// ── Colapsar/expandir ────────────────────────────────────────
-window.toggleCollapse = function(e, id, pid) {
+window.toggleCollapse = function(e,id,pid){
   e.stopPropagation();
-  if (_ganttCollapsed.has(id)) _ganttCollapsed.delete(id);
-  else _ganttCollapsed.add(id);
-  renderProjectGantt(["project", pid]);
+  if(_ganttCollapsed.has(id)) _ganttCollapsed.delete(id); else _ganttCollapsed.add(id);
+  renderProjectGantt(["project",pid]);
 };
+window.onTaskRowClick = (tid,pid)=>openTaskModal(tid,pid);
 
-window.onTaskRowClick = function(tid, pid) {
-  openTaskModal(tid, pid);
-};
-
-// ── Stats ────────────────────────────────────────────────────
-function calcStats(tasks) {
+function calcStats(tasks){
   return {
     completed:  tasks.filter(t=>t.status==="completed").length,
     inProgress: tasks.filter(t=>t.status==="in_progress").length,
@@ -414,14 +411,10 @@ function calcStats(tasks) {
     overdue:    tasks.filter(t=>App.isOverdue(t)).length,
   };
 }
-
-function statusDot(color, label) {
+function statusDot(color,label){
   return `<div class="stat-dot"><span class="dot dot--${color}"></span>${label}</div>`;
 }
-
-function scaleLabel(s) {
-  return {day:App.t("day"),week:App.t("week"),month:App.t("month")}[s]||s;
-}
+function scaleLabel(s){return {day:"Dia",week:"Semana",month:"Mês"}[s]||s;}
 
 // ============================================================
 //  Modal de Tarefa
@@ -433,6 +426,9 @@ window.openTaskModal = function(taskId, projectId) {
   const task  = isNew ? App.createTask() : (p.tasks||[]).find(t=>t.id===taskId);
   if (!task) return;
 
+  // Carrega usuários da lista de membros do projeto + admin users
+  const allUsers = getAvailableUsers();
+
   const parentOptions = (p.tasks||[])
     .filter(t=>t.id!==taskId&&!t.isMilestone)
     .map(t=>`<option value="${t.id}" ${t.id===task.parentId?"selected":""}>${t.name}</option>`)
@@ -443,13 +439,6 @@ window.openTaskModal = function(taskId, projectId) {
     .map(t=>`<option value="${t.id}">${t.name}</option>`)
     .join("");
 
-  const currentDeps = (task.dependencies||[]).map(d => {
-    const dt = (p.tasks||[]).find(t=>t.id===d.taskId);
-    return dt ? `<span class="dep-tag">${dt.name} <span style="font-size:10px;color:var(--c-text-3)">${d.type}</span>
-      <i class="ti ti-x" style="cursor:pointer;font-size:11px"
-         onclick="removeDep('${d.taskId}')"></i></span>` : "";
-  }).join("");
-
   const statusOpts = ["not_started","in_progress","completed","delayed"].map(s=>
     `<button type="button" class="status-opt ${task.status===s?"status-opt--on":""}"
       data-s="${s}" onclick="selectStatus(this)">${statusLabel(s)}</button>`
@@ -459,7 +448,7 @@ window.openTaskModal = function(taskId, projectId) {
     <div class="modal__head">
       <div class="modal__title">
         <i class="ti ti-subtask"></i>
-        ${isNew ? App.t("newTask") : App.t("editTask")}
+        ${isNew?"Nova tarefa":"Editar tarefa"}
       </div>
       <button class="btn btn--ghost btn--sm" onclick="App.closeModal()">
         <i class="ti ti-x"></i>
@@ -469,121 +458,132 @@ window.openTaskModal = function(taskId, projectId) {
       <div class="section-sep">Informações gerais</div>
 
       <div class="field">
-        <label>${App.t("name")}</label>
-        <input id="tk-name" class="input" type="text" value="${task.name}"
-          placeholder="Nome da tarefa">
+        <label>Nome</label>
+        <input id="tk-name" class="input" type="text" value="${task.name}" placeholder="Nome da tarefa">
       </div>
 
       <div class="fields-row fields-row--2">
         <div class="field">
-          <label>${App.t("startDate")}</label>
-          <input id="tk-start" class="input" type="date" value="${task.startDate||""}">
+          <label>Início</label>
+          <input id="tk-start" class="input" type="date" value="${task.startDate||""}"
+            oninput="onTaskStartChange()">
         </div>
         <div class="field">
-          <label>${App.t("endDate")}</label>
+          <label>Término</label>
           <input id="tk-end" class="input" type="date" value="${task.endDate||""}">
         </div>
       </div>
 
       <div class="fields-row fields-row--2">
         <div class="field">
-          <label>${App.t("status")}</label>
-          <div class="status-opts" id="tk-status" data-val="${task.status}">
-            ${statusOpts}
-          </div>
+          <label>Status</label>
+          <div class="status-opts" id="tk-status" data-val="${task.status}">${statusOpts}</div>
         </div>
         <div class="field">
-          <label>${App.t("assignee")}</label>
+          <label>Responsável</label>
           <select id="tk-assignee" class="input">
-            ${MOCK_USERS.map(u=>`<option value="${u.id}" ${u.id===task.assigneeId?"selected":""}>${u.name}</option>`).join("")}
+            ${allUsers.map(u=>`<option value="${u.id}" ${u.id===task.assigneeId?"selected":""}>${u.name}</option>`).join("")}
           </select>
         </div>
       </div>
 
       <div class="field">
-        <label>${App.t("progress")}: <span id="tk-pct-label">${task.progress||0}%</span></label>
+        <label>Progresso: <span id="tk-pct-label">${task.progress||0}%</span></label>
         <input id="tk-progress" type="range" min="0" max="100" step="5"
-          value="${task.progress||0}" oninput="document.getElementById('tk-pct-label').textContent=this.value+'%'"
+          value="${task.progress||0}"
+          oninput="document.getElementById('tk-pct-label').textContent=this.value+'%'"
           style="width:100%;accent-color:var(--c-blue)">
       </div>
 
-      <div class="field" style="flex-direction:row;align-items:center;gap:8px;margin-top:2px">
+      <div class="field" style="flex-direction:row;align-items:center;gap:8px">
         <input id="tk-milestone" type="checkbox" ${task.isMilestone?"checked":""}>
-        <label for="tk-milestone" style="margin:0;font-size:13px;color:var(--c-text);cursor:pointer">
-          ${App.t("milestone")}
-        </label>
+        <label for="tk-milestone" style="margin:0;font-size:13px;cursor:pointer">Marco (milestone)</label>
       </div>
 
       <div class="section-sep">Hierarquia e dependências</div>
 
       <div class="fields-row fields-row--2">
         <div class="field">
-          <label>${App.t("parentTask")}</label>
+          <label>Tarefa pai</label>
           <select id="tk-parent" class="input">
             <option value="">— raiz —</option>
             ${parentOptions}
           </select>
         </div>
         <div class="field">
-          <label>${App.t("depType")}</label>
+          <label>Tipo de dependência</label>
           <select id="tk-dep-type" class="input">
-            ${["FS","SS","FF","SF"].map(t=>`<option>${t}</option>`).join("")}
+            <option value="FS">FS — Fim → Início</option>
+            <option value="SS">SS — Início → Início</option>
+            <option value="FF">FF — Fim → Fim</option>
+            <option value="SF">SF — Início → Fim</option>
           </select>
         </div>
       </div>
 
       <div class="field">
-        <label>${App.t("dependsOn")}</label>
-        <div id="tk-deps-wrap" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-          ${currentDeps}
-          <div style="display:flex;gap:6px;align-items:center">
-            <select id="tk-dep-select" class="input" style="width:auto;font-size:12px">
-              <option value="">Selecionar tarefa…</option>
-              ${depOptions}
-            </select>
-            <button type="button" class="btn btn--secondary btn--sm" onclick="addDep()">
-              ${App.t("addDep")}
-            </button>
-          </div>
+        <label>Depende de</label>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <select id="tk-dep-select" class="input" style="flex:1;font-size:12px">
+            <option value="">Selecionar tarefa…</option>
+            ${depOptions}
+          </select>
+          <button type="button" class="btn btn--secondary btn--sm" onclick="addDep()">
+            <i class="ti ti-plus"></i> Adicionar
+          </button>
+        </div>
+        <div id="tk-deps-list" style="display:flex;flex-direction:column;gap:4px">
+          <!-- tags renderizadas por refreshDepTags() -->
         </div>
       </div>
 
       <div class="field">
-        <label>${App.t("notes")}</label>
+        <label>Observações</label>
         <textarea id="tk-notes" class="input">${task.notes||""}</textarea>
       </div>
     </div>
     <div class="modal__footer">
-      ${!isNew?`<button class="btn btn--danger btn--sm" onclick="deleteTaskAndClose('${taskId}','${projectId}')">
-        <i class="ti ti-trash"></i>${App.t("delete")}
-      </button>`:""}
+      ${!isNew?`<button class="btn btn--danger btn--sm"
+          onclick="deleteTaskAndClose('${taskId}','${projectId}')">
+          <i class="ti ti-trash"></i>Excluir
+        </button>`:""}
       <div class="modal__footer-spacer"></div>
-      <button class="btn btn--ghost" onclick="App.closeModal()">${App.t("cancel")}</button>
-      <button class="btn btn--primary" onclick="saveTaskModal('${taskId||""}','${projectId}')">
-        <i class="ti ti-check"></i>${App.t("save")}
+      <button class="btn btn--ghost" onclick="App.closeModal()">Cancelar</button>
+      <button class="btn btn--primary"
+        onclick="saveTaskModal('${taskId||""}','${projectId}')">
+        <i class="ti ti-check"></i>Salvar
       </button>
     </div>
 
     <style>
       .status-opts{display:flex;gap:5px;flex-wrap:wrap;}
       .status-opt{font-size:11px;padding:4px 10px;border-radius:20px;
-        border:1px solid var(--c-border);cursor:pointer;background:transparent;
-        color:var(--c-text-2);transition:background .12s;}
+        border:1px solid var(--c-border);cursor:pointer;background:transparent;color:var(--c-text-2);}
       .status-opt--on{font-weight:500;}
       .status-opt[data-s="not_started"].status-opt--on{background:var(--c-gray-bg);color:var(--c-gray);border-color:var(--c-gray-border);}
       .status-opt[data-s="in_progress"].status-opt--on{background:var(--c-blue-bg);color:var(--c-blue);border-color:var(--c-blue-border);}
       .status-opt[data-s="completed"].status-opt--on{background:var(--c-green-bg);color:var(--c-green);border-color:var(--c-green-border);}
       .status-opt[data-s="delayed"].status-opt--on{background:var(--c-red-bg);color:var(--c-red);border-color:var(--c-red-border);}
-      .dep-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;
-        padding:3px 8px;border:1px solid var(--c-border);border-radius:var(--r-md);
-        background:var(--c-surface-2);}
+      .dep-row{display:flex;align-items:center;gap:8px;padding:5px 10px;
+        background:var(--c-surface-2);border-radius:var(--r-md);font-size:12px;}
+      .dep-row__name{flex:1;}
+      .dep-row__type{font-size:10px;color:var(--c-text-3);background:var(--c-surface);
+        border:1px solid var(--c-border);border-radius:var(--r-sm);padding:1px 6px;}
+      .dep-row__auto{font-size:10px;color:var(--c-green);margin-left:auto;}
     </style>
   `);
 
-  // Estado local do modal para deps
-  window._modalDeps  = JSON.parse(JSON.stringify(task.dependencies||[]));
-  window._modalProjId = projectId;
-  window._modalTaskId = taskId||null;
+  window._modalDeps    = JSON.parse(JSON.stringify(task.dependencies||[]));
+  window._modalProjId  = projectId;
+  window._modalTaskId  = taskId||null;
+  window._modalProjObj = p;
+
+  refreshDepTags();
+};
+
+// Quando o usuário muda a data de início manualmente
+window.onTaskStartChange = function() {
+  // não faz nada automaticamente — o auto-ajuste acontece ao adicionar dependência
 };
 
 window.selectStatus = function(btn) {
@@ -593,55 +593,107 @@ window.selectStatus = function(btn) {
 };
 
 window.addDep = function() {
-  const sel = document.getElementById("tk-dep-select");
-  const type = document.getElementById("tk-dep-type").value;
-  const tid = sel.value;
+  const sel   = document.getElementById("tk-dep-select");
+  const type  = document.getElementById("tk-dep-type").value;
+  const tid   = sel.value;
   if (!tid) return;
   if (window._modalDeps.some(d=>d.taskId===tid)) return;
+
   window._modalDeps.push({taskId:tid, type});
   sel.value = "";
+
+  // Auto-ajuste de datas baseado na dependência
+  autoAdjustDates(tid, type);
   refreshDepTags();
 };
+
+function autoAdjustDates(depTaskId, type) {
+  const p = window._modalProjObj;
+  if (!p) return;
+  const depTask = (p.tasks||[]).find(t=>t.id===depTaskId);
+  if (!depTask) return;
+
+  const startEl = document.getElementById("tk-start");
+  const endEl   = document.getElementById("tk-end");
+
+  // Calcula duração atual da tarefa editada (para manter)
+  const curStart = startEl.value;
+  const curEnd   = endEl.value;
+  const dur = (curStart && curEnd) ? daysBetween(curStart, curEnd) : null;
+
+  let newStart = null;
+
+  if (type === "FS" && depTask.endDate) {
+    // Começa no dia seguinte ao fim da anterior
+    newStart = addDays(depTask.endDate, 1);
+  } else if (type === "SS" && depTask.startDate) {
+    // Começa junto com a anterior
+    newStart = depTask.startDate;
+  }
+  // FF e SF não alteram início, apenas fim — deixar para o usuário ajustar
+
+  if (newStart) {
+    startEl.value = newStart;
+    // Se tinha duração definida, mantém a duração
+    if (dur !== null && dur >= 0) {
+      endEl.value = addDays(newStart, dur);
+    }
+    // Feedback visual
+    startEl.style.borderColor = "var(--c-green)";
+    setTimeout(() => startEl.style.borderColor = "", 2000);
+  }
+}
+
+function refreshDepTags() {
+  const p    = window._modalProjObj;
+  const list = document.getElementById("tk-deps-list");
+  if (!list || !p) return;
+
+  if (!window._modalDeps.length) {
+    list.innerHTML = `<div style="font-size:11px;color:var(--c-text-3);padding:4px 0">Nenhuma dependência.</div>`;
+    return;
+  }
+
+  list.innerHTML = window._modalDeps.map(d => {
+    const dt = (p.tasks||[]).find(t=>t.id===d.taskId);
+    if (!dt) return "";
+    const autoLabel = (d.type==="FS"||d.type==="SS") && dt.endDate
+      ? `<span class="dep-row__auto"><i class="ti ti-calendar-check" style="font-size:11px"></i> datas ajustadas</span>` : "";
+    return `<div class="dep-row">
+      <span class="dep-row__name">${dt.name}</span>
+      <span class="dep-row__type">${d.type}</span>
+      ${autoLabel}
+      <button type="button" class="btn btn--ghost btn--sm" style="padding:2px 6px"
+        onclick="removeDep('${d.taskId}')">
+        <i class="ti ti-x" style="font-size:12px"></i>
+      </button>
+    </div>`;
+  }).join("");
+}
 
 window.removeDep = function(tid) {
   window._modalDeps = window._modalDeps.filter(d=>d.taskId!==tid);
   refreshDepTags();
 };
 
-function refreshDepTags() {
-  const p = App.getProject(window._modalProjId);
-  if (!p) return;
-  const wrap = document.getElementById("tk-deps-wrap");
-  if (!wrap) return;
-  const tags = window._modalDeps.map(d=>{
-    const dt=(p.tasks||[]).find(t=>t.id===d.taskId);
-    return dt?`<span class="dep-tag">${dt.name} <span style="font-size:10px;color:var(--c-text-3)">${d.type}</span>
-      <i class="ti ti-x" style="cursor:pointer;font-size:11px" onclick="removeDep('${d.taskId}')"></i></span>`:"";
-  }).join("");
-  // preserve the select row
-  const sel = wrap.querySelector("div");
-  wrap.innerHTML = tags;
-  if (sel) wrap.appendChild(sel);
-}
-
 window.saveTaskModal = function(taskId, projectId) {
   const p = App.getProject(projectId);
   if (!p) return;
-
   const name = document.getElementById("tk-name").value.trim();
   if (!name) { document.getElementById("tk-name").focus(); return; }
 
   const assigneeId = document.getElementById("tk-assignee").value;
-  const assignee   = MOCK_USERS.find(u=>u.id===assigneeId);
+  const allUsers   = getAvailableUsers();
+  const assignee   = allUsers.find(u=>u.id===assigneeId);
 
   const task = {
-    id:           taskId || App.createTask().id,
+    id:           taskId || App.uid(),
     parentId:     document.getElementById("tk-parent").value || null,
     name,
     notes:        document.getElementById("tk-notes").value,
     startDate:    document.getElementById("tk-start").value || null,
     endDate:      document.getElementById("tk-end").value || null,
-    assigneeId:   assigneeId,
+    assigneeId,
     assigneeName: assignee?.name || "",
     progress:     parseInt(document.getElementById("tk-progress").value)||0,
     status:       document.getElementById("tk-status").dataset.val||"not_started",
@@ -661,7 +713,7 @@ window.saveTaskModal = function(taskId, projectId) {
 };
 
 window.deleteTaskAndClose = function(taskId, projectId) {
-  if (!confirm(App.t("deleteConfirm"))) return;
+  if (!confirm("Tem certeza que deseja excluir esta tarefa?")) return;
   const p = App.getProject(projectId);
   if (!p) return;
   p.tasks = (p.tasks||[]).filter(t=>t.id!==taskId);
@@ -671,6 +723,18 @@ window.deleteTaskAndClose = function(taskId, projectId) {
 };
 
 function statusLabel(s) {
-  return {not_started:App.t("notStarted"),in_progress:App.t("inProgress"),
-    completed:App.t("completed"),delayed:App.t("delayed")}[s]||s;
+  return {not_started:"Não iniciada",in_progress:"Em andamento",
+    completed:"Concluído",delayed:"Atrasada"}[s]||s;
+}
+
+// Retorna lista de usuários disponíveis (admin users + mock)
+function getAvailableUsers() {
+  try {
+    const raw = localStorage.getItem("pp_users");
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (saved.length) return saved;
+    }
+  } catch {}
+  return typeof MOCK_USERS !== "undefined" ? MOCK_USERS : [];
 }
