@@ -17,8 +17,26 @@
           "initials": "AG"
         }
       ],
-      "tasks": [],
-      "updatedAt": "2026-06-12T13:39:50.346Z"
+      "tasks": [
+        {
+          "id": "mqaz4v16hp2hj9g7x8",
+          "parentId": null,
+          "name": "A-SAMPLE",
+          "notes": "",
+          "startDate": "2026-06-12",
+          "endDate": "2026-06-26",
+          "assigneeId": "u1",
+          "assigneeName": "Augusto Silva",
+          "progress": 0,
+          "status": "not_started",
+          "isMilestone": false,
+          "dependencies": [],
+          "order": 0,
+          "createdAt": "2026-06-12T13:40:26.010Z",
+          "updatedAt": "2026-06-12T13:40:26.010Z"
+        }
+      ],
+      "updatedAt": "2026-06-12T13:40:26.010Z"
     }
   ]
 }
