@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProjectPlanner</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/tabler-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --c-bg:#F6F5F1; --c-surface:#FFFFFF; --c-surface-2:#F0EEE8;
+      --c-border:#E2DFDA; --c-border-2:#D0CCC4;
+      --c-text:#1A1917; --c-text-2:#6B6860; --c-text-3:#9E9B95;
+      --c-blue:#1E6FD9; --c-blue-bg:#EAF2FD; --c-blue-border:#B8D4F5;
+      --c-green:#1A8C5B; --c-green-bg:#E4F5EE; --c-green-border:#A5DDBF;
+      --c-amber:#B86A00; --c-amber-bg:#FEF3E2; --c-amber-border:#F5CC87;
+      --c-red:#C42B2B; --c-red-bg:#FDEAEA; --c-red-border:#F4AAAA;
+      --c-gray:#6B6860; --c-gray-bg:#F0EEE8; --c-gray-border:#D0CCC4;
+      --font:'Inter',system-ui,sans-serif;
+      --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px;
+      --shadow-sm:0 1px 3px rgba(0,0,0,.06);
+      --shadow-md:0 4px 12px rgba(0,0,0,.08);
+      --shadow-lg:0 12px 32px rgba(0,0,0,.12);
+      --topnav-h:52px;
+    }
+    html,body{height:100%;font-family:var(--font);font-size:14px;
+      background:var(--c-bg);color:var(--c-text);-webkit-font-smoothing:antialiased;}
+
+    [data-screen]{display:none;}
+
+    /* ── Telas centralizadas ── */
+    .center-screen{display:flex;align-items:center;justify-content:center;
+      min-height:100vh;padding:20px;}
+    .setup-card{background:var(--c-surface);border:1px solid var(--c-border);
+      border-radius:var(--r-xl);padding:32px;width:100%;max-width:480px;
+      box-shadow:var(--shadow-md);}
+    .setup-card__logo{display:flex;align-items:center;gap:10px;
+      font-size:18px;font-weight:600;margin-bottom:6px;}
+    .setup-card__logo i{font-size:22px;color:var(--c-blue);}
+    .setup-card__sub{font-size:13px;color:var(--c-text-2);margin-bottom:24px;line-height:1.5;}
+    .setup-card h2{font-size:15px;font-weight:600;margin-bottom:16px;
+      display:flex;align-items:center;gap:8px;}
+    .setup-fields{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;}
+    .setup-hint{font-size:11px;color:var(--c-text-3);margin-top:4px;line-height:1.4;}
+    .setup-hint a{color:var(--c-blue);}
+    .test-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+    #setup-test-msg{font-size:12px;font-weight:500;}
+    .setup-sep{border:none;border-top:1px solid var(--c-border);margin:16px 0;}
+
+    /* ── Loading ── */
+    #screen-loading{display:flex;flex-direction:column;align-items:center;
+      justify-content:center;height:100vh;gap:14px;}
+    .loading-logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600;}
+    .loading-logo i{font-size:24px;color:var(--c-blue);}
+    .spinner{width:22px;height:22px;border:2.5px solid var(--c-border);
+      border-top-color:var(--c-blue);border-radius:50%;
+      animation:spin .7s linear infinite;display:inline-block;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── App Shell ── */
+    #screen-app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+    /* ── Topnav ── */
+    .topnav{height:var(--topnav-h);background:var(--c-surface);
+      border-bottom:1px solid var(--c-border);display:flex;align-items:center;
+      padding:0 20px;gap:16px;flex-shrink:0;box-shadow:var(--shadow-sm);z-index:100;}
+    .topnav__logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;
+      color:var(--c-text);text-decoration:none;flex-shrink:0;}
+    .topnav__logo i{font-size:18px;color:var(--c-blue);}
+    .topnav__sep{width:1px;height:20px;background:var(--c-border);flex-shrink:0;}
+    .topnav__nav{display:flex;gap:2px;flex:1;}
+    .topnav__link{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
+      border-radius:var(--r-md);font-size:13px;font-weight:500;color:var(--c-text-2);
+      text-decoration:none;border:none;background:transparent;cursor:pointer;
+      transition:background .15s,color .15s;}
+    .topnav__link:hover{background:var(--c-surface-2);color:var(--c-text);}
+    .topnav__link--active{background:var(--c-surface-2);color:var(--c-text);}
+    .topnav__link i{font-size:15px;}
+    .topnav__right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+    .topnav__lang{font-size:12px;color:var(--c-text-2);background:transparent;
+      border:1px solid var(--c-border);border-radius:var(--r-sm);padding:3px 7px;cursor:pointer;}
+    .topnav__user-name{font-size:13px;color:var(--c-text-2);}
+    .avatar{border-radius:50%;font-weight:600;display:inline-flex;
+      align-items:center;justify-content:center;flex-shrink:0;}
+    #nav-user-avatar{width:30px;height:30px;font-size:11px;
+      border:1.5px solid var(--c-border-2);cursor:pointer;}
+    #nav-user-avatar:hover{opacity:.8;}
+
+    /* ── Content ── */
+    #app-content{flex:1;overflow-y:auto;padding:24px;}
+
+    /* ── Botões ── */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+      border-radius:var(--r-md);font-size:13px;font-weight:500;cursor:pointer;
+      border:1px solid transparent;transition:background .15s;white-space:nowrap;}
+    .btn i{font-size:15px;}
+    .btn--primary{background:var(--c-blue);color:#fff;border-color:var(--c-blue);}
+    .btn--primary:hover{background:#1860c4;}
+    .btn--secondary{background:var(--c-surface);color:var(--c-text);border-color:var(--c-border);}
+    .btn--secondary:hover{background:var(--c-surface-2);}
+    .btn--danger{background:var(--c-red-bg);color:var(--c-red);border-color:var(--c-red-border);}
+    .btn--danger:hover{background:#fbd8d8;}
+    .btn--ghost{background:transparent;color:var(--c-text-2);border-color:transparent;}
+    .btn--ghost:hover{background:var(--c-surface-2);color:var(--c-text);}
+    .btn--sm{padding:4px 10px;font-size:12px;}
+    .btn--sm i{font-size:13px;}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+    /* ── Inputs ── */
+    .field{display:flex;flex-direction:column;gap:5px;}
+    .field label{font-size:12px;font-weight:500;color:var(--c-text-2);}
+    .input{padding:7px 10px;border:1px solid var(--c-border);border-radius:var(--r-md);
+      font-size:13px;font-family:var(--font);color:var(--c-text);background:var(--c-surface);
+      transition:border-color .15s;width:100%;}
+    .input:focus{outline:none;border-color:var(--c-blue);}
+    .input::placeholder{color:var(--c-text-3);}
+    textarea.input{resize:vertical;min-height:72px;}
+    .fields-row{display:grid;gap:12px;}
+    .fields-row--2{grid-template-columns:1fr 1fr;}
+    .fields-row--3{grid-template-columns:1fr 1fr 1fr;}
+
+    /* ── Badges ── */
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;
+      font-size:11px;font-weight:500;border:1px solid transparent;}
+    .badge--active{background:var(--c-blue-bg);color:var(--c-blue);border-color:var(--c-blue-border);}
+    .badge--paused{background:var(--c-gray-bg);color:var(--c-gray);border-color:var(--c-gray-border);}
+    .badge--completed{background:var(--c-green-bg);color:var(--c-green);border-color:var(--c-green-border);}
+    .badge--critical{background:var(--c-red-bg);color:var(--c-red);border-color:var(--c-red-border);}
+    .badge--high{background:var(--c-amber-bg);color:var(--c-amber);border-color:var(--c-amber-border);}
+    .badge--medium{background:var(--c-blue-bg);color:var(--c-blue);border-color:var(--c-blue-border);}
+    .badge--low{background:var(--c-green-bg);color:var(--c-green);border-color:var(--c-green-border);}
+
+    /* ── Cards ── */
+    .card{background:var(--c-surface);border:1px solid var(--c-border);
+      border-radius:var(--r-xl);overflow:hidden;}
+    .card__head{display:flex;align-items:center;justify-content:space-between;
+      padding:12px 16px;border-bottom:1px solid var(--c-border);background:var(--c-surface-2);}
+    .card__title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;}
+    .card__title i{font-size:15px;color:var(--c-text-2);}
+
+    /* ── Progress ── */
+    .progress-track{height:5px;background:var(--c-surface-2);border-radius:3px;overflow:hidden;}
+    .progress-fill{height:100%;border-radius:3px;background:var(--c-blue);transition:width .3s;}
+    .progress-fill--green{background:var(--c-green);}
+    .progress-fill--amber{background:var(--c-amber);}
+    .progress-fill--red{background:var(--c-red);}
+    .progress-fill--gray{background:#B4B2A9;}
+
+    /* ── Alertas ── */
+    .alert{display:flex;align-items:center;gap:10px;padding:10px 14px;
+      border-radius:var(--r-lg);border:1px solid transparent;font-size:13px;}
+    .alert i{font-size:16px;flex-shrink:0;}
+    .alert__text{flex:1;}
+    .alert--error{background:var(--c-red-bg);border-color:var(--c-red-border);color:var(--c-red);}
+    .alert--warn{background:var(--c-amber-bg);border-color:var(--c-amber-border);color:var(--c-amber);}
+    .alert--info{background:var(--c-blue-bg);border-color:var(--c-blue-border);color:var(--c-blue);}
+
+    /* ── Modal ── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);
+      display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+    .modal{background:var(--c-surface);border:1px solid var(--c-border);
+      border-radius:var(--r-xl);width:100%;max-width:560px;max-height:90vh;
+      overflow-y:auto;box-shadow:var(--shadow-lg);}
+    .modal__head{display:flex;align-items:center;justify-content:space-between;
+      padding:14px 18px;border-bottom:1px solid var(--c-border);
+      background:var(--c-surface-2);position:sticky;top:0;z-index:1;}
+    .modal__title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;}
+    .modal__body{padding:18px;display:flex;flex-direction:column;gap:14px;}
+    .modal__footer{display:flex;align-items:center;gap:8px;padding:12px 18px;
+      border-top:1px solid var(--c-border);background:var(--c-surface-2);
+      position:sticky;bottom:0;}
+    .modal__footer-spacer{flex:1;}
+    .section-sep{font-size:11px;font-weight:600;color:var(--c-text-3);
+      text-transform:uppercase;letter-spacing:.5px;padding-bottom:6px;
+      border-bottom:1px solid var(--c-border);}
+
+    /* ── Misc ── */
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+    .dot--green{background:var(--c-green);} .dot--blue{background:var(--c-blue);}
+    .dot--amber{background:var(--c-amber);} .dot--red{background:var(--c-red);}
+    .dot--gray{background:#B4B2A9;}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+    .page-header h1{font-size:20px;font-weight:600;}
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:48px 24px;text-align:center;gap:10px;}
+    .empty-state i{font-size:36px;color:var(--c-text-3);}
+    .empty-state h3{font-size:15px;font-weight:600;}
+    .empty-state p{font-size:13px;color:var(--c-text-2);max-width:280px;}
+    .avatar-stack{display:flex;}
+    .avatar-stack .avatar{width:22px;height:22px;font-size:9px;
+      border:2px solid var(--c-surface);margin-left:-6px;}
+    .avatar-stack .avatar:first-child{margin-left:0;}
+
+    /* ── Toast ── */
+    #toast-container{position:fixed;bottom:24px;right:24px;
+      display:flex;flex-direction:column;gap:8px;z-index:1000;}
+    .toast{padding:10px 16px;border-radius:var(--r-lg);font-size:13px;font-weight:500;
+      box-shadow:var(--shadow-md);opacity:0;transform:translateY(8px);
+      transition:opacity .25s,transform .25s;pointer-events:none;}
+    .toast--visible{opacity:1;transform:none;}
+    .toast--success{background:var(--c-green-bg);color:var(--c-green);border:1px solid var(--c-green-border);}
+    .toast--error{background:var(--c-red-bg);color:var(--c-red);border:1px solid var(--c-red-border);}
+    .toast--info{background:var(--c-blue-bg);color:var(--c-blue);border:1px solid var(--c-blue-border);}
+
+    @media(max-width:768px){
+      #app-content{padding:16px;}
+      .topnav__user-name,.topnav__link span{display:none;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── LOADING ── -->
+  <div id="screen-loading" data-screen="loading">
+    <div class="loading-logo"><i class="ti ti-layout-kanban"></i> ProjectPlanner</div>
+    <div class="spinner"></div>
+    <div style="font-size:12px;color:var(--c-text-3)">Carregando dados do GitHub…</div>
+  </div>
+
+  <!-- ── SETUP GitHub ── -->
+  <div id="screen-setup" data-screen="setup" class="center-screen">
+    <div class="setup-card">
+      <div class="setup-card__logo">
+        <i class="ti ti-layout-kanban"></i> ProjectPlanner
+      </div>
+      <div class="setup-card__sub">
+        Configure o repositório GitHub onde os dados serão armazenados.
+        Isso só precisa ser feito uma vez por dispositivo.
+      </div>
+
+      <h2><i class="ti ti-brand-github" style="color:var(--c-text-2)"></i> Repositório GitHub</h2>
+
+      <div class="setup-fields">
+        <div class="field">
+          <label>Usuário GitHub *</label>
+          <input id="setup-owner" class="input" type="text" placeholder="ex: joaosilva">
+        </div>
+        <div class="field">
+          <label>Nome do repositório *</label>
+          <input id="setup-repo" class="input" type="text" placeholder="ex: project-planner">
+          <div class="setup-hint">O repositório deve existir e ser acessível ao token.</div>
+        </div>
+        <div class="field">
+          <label>Personal Access Token *</label>
+          <input id="setup-token" class="input" type="password" placeholder="ghp_...">
+          <div class="setup-hint">
+            Crie em: <a href="https://github.com/settings/tokens/new" target="_blank">
+            github.com/settings/tokens</a> → selecione escopo <strong>repo</strong> → Generate.
+            O token fica salvo apenas neste navegador (localStorage).
+          </div>
+        </div>
+        <div class="field">
+          <label>Branch</label>
+          <input id="setup-branch" class="input" type="text" placeholder="main" value="main">
+        </div>
+      </div>
+
+      <div class="test-row">
+        <button id="setup-test-btn" class="btn btn--secondary btn--sm" onclick="testGhConnection()">
+          <i class="ti ti-plug"></i> Testar conexão
+        </button>
+        <span id="setup-test-msg"></span>
+      </div>
+
+      <button class="btn btn--primary" style="width:100%;justify-content:center"
+              onclick="saveSetup()">
+        <i class="ti ti-arrow-right"></i> Salvar e continuar
+      </button>
+    </div>
+  </div>
+
+  <!-- ── IDENTIFICAÇÃO DE USUÁRIO ── -->
+  <div id="screen-user" data-screen="user" class="center-screen">
+    <div class="setup-card" style="max-width:360px;text-align:center">
+      <div class="setup-card__logo" style="justify-content:center">
+        <i class="ti ti-user-circle"></i> ProjectPlanner
+      </div>
+      <div class="setup-card__sub">
+        Como você se chama? Seu nome identifica suas ações nos projetos.
+      </div>
+      <div class="field" style="text-align:left;margin-bottom:14px;">
+        <label>Seu nome</label>
+        <input id="user-input" class="input" type="text"
+               placeholder="Ex: Augusto Silva" autofocus>
+      </div>
+      <button id="user-btn" class="btn btn--primary"
+              style="width:100%;justify-content:center">
+        <i class="ti ti-arrow-right"></i> Continuar
+      </button>
+    </div>
+  </div>
+
+  <!-- ── APP ── -->
+  <div id="screen-app" data-screen="app">
+    <nav class="topnav">
+      <a href="#/dashboard" class="topnav__logo">
+        <i class="ti ti-layout-kanban"></i> ProjectPlanner
+      </a>
+      <div class="topnav__sep"></div>
+      <div class="topnav__nav">
+        <a href="#/dashboard" class="topnav__link" data-route="/dashboard">
+          <i class="ti ti-home"></i><span>Dashboard</span>
+        </a>
+        <a href="#/projects" class="topnav__link" data-route="/projects">
+          <i class="ti ti-folders"></i><span>Projetos</span>
+        </a>
+      </div>
+      <div class="topnav__right">
+        <button class="topnav__lang" id="lang-btn" onclick="toggleLang()">PT</button>
+        <button class="btn btn--ghost btn--sm" onclick="openSettings()" title="Configurações GitHub">
+          <i class="ti ti-settings" style="font-size:15px"></i>
+        </button>
+        <span class="topnav__user-name" id="nav-user-name"></span>
+        <div class="avatar" id="nav-user-avatar" onclick="resetUser()"
+             title="Trocar usuário"
+             style="width:30px;height:30px;font-size:11px;border:1.5px solid var(--c-border-2)">
+          ?
+        </div>
+      </div>
+    </nav>
+    <main id="app-content">
+      <div style="display:flex;align-items:center;justify-content:center;
+                  height:100%;gap:10px;color:var(--c-text-2);">
+        <div class="spinner"></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="github-storage.js"></script>
+  <script src="mock-data.js"></script>
+  <script src="app.js"></script>
+  <script src="pages/dashboard.js"></script>
+  <script src="pages/project-list.js"></script>
+  <script src="pages/project-gantt.js"></script>
+  <script src="pages/project-form.js"></script>
+
+  <script>
+    function toggleLang() {
+      App.state.language = App.state.language === "pt" ? "en" : "pt";
+      localStorage.setItem("pp_lang", App.state.language);
+      document.getElementById("lang-btn").textContent = App.state.language.toUpperCase();
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    }
+  </script>
+</body>
+</html>
