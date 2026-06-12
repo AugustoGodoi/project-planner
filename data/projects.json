@@ -57,20 +57,51 @@
           "parentId": "mqaz4v16hp2hj9g7x8",
           "name": "2D - DRAWINGS",
           "notes": "",
-          "startDate": "2026-06-12",
+          "startDate": "2026-06-19",
           "endDate": "2026-07-03",
           "assigneeId": "u1",
           "assigneeName": "Augusto Silva",
           "progress": 0,
           "status": "not_started",
           "isMilestone": false,
-          "dependencies": [],
+          "dependencies": [
+            {
+              "taskId": "mqaz5e60knh624uuub",
+              "type": "SS"
+            }
+          ],
           "order": 2,
-          "createdAt": "2026-06-12T13:41:29.956Z",
-          "updatedAt": "2026-06-12T13:41:29.956Z"
+          "createdAt": "2026-06-12T13:42:13.181Z",
+          "updatedAt": "2026-06-12T13:42:13.181Z"
+        },
+        {
+          "id": "mqaz7z9s70w8ey7gb6w",
+          "parentId": "mqaz4v16hp2hj9g7x8",
+          "name": "DPF",
+          "notes": "",
+          "startDate": "2026-06-20",
+          "endDate": "2026-06-27",
+          "assigneeId": "u1",
+          "assigneeName": "Augusto Silva",
+          "progress": 0,
+          "status": "delayed",
+          "isMilestone": false,
+          "dependencies": [
+            {
+              "taskId": "mqaz5e60knh624uuub",
+              "type": "FS"
+            },
+            {
+              "taskId": "mqaz68dgz0dtsbisjl",
+              "type": "FS"
+            }
+          ],
+          "order": 3,
+          "createdAt": "2026-06-12T13:42:51.472Z",
+          "updatedAt": "2026-06-12T13:42:51.472Z"
         }
       ],
-      "updatedAt": "2026-06-12T13:41:29.956Z"
+      "updatedAt": "2026-06-12T13:42:51.472Z"
     }
   ]
 }
