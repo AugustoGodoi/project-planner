@@ -82,7 +82,7 @@
           "startDate": "2026-06-20",
           "endDate": "2026-06-27",
           "assigneeId": "u1",
-          "assigneeName": "Augusto Silva",
+          "assigneeName": "Augusto Godoi",
           "progress": 0,
           "status": "delayed",
           "isMilestone": false,
@@ -97,11 +97,11 @@
             }
           ],
           "order": 3,
-          "createdAt": "2026-06-12T13:42:51.472Z",
-          "updatedAt": "2026-06-12T13:42:51.472Z"
+          "createdAt": "2026-06-12T16:42:38.650Z",
+          "updatedAt": "2026-06-12T16:42:38.650Z"
         }
       ],
-      "updatedAt": "2026-06-12T13:42:51.472Z"
+      "updatedAt": "2026-06-12T16:42:38.650Z"
     }
   ]
 }
