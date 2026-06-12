@@ -1,0 +1,24 @@
+{
+  "projects": [
+    {
+      "id": "mqaz3p8whoq6sf6w48a",
+      "name": "TEMPLATE FOR PP50",
+      "description": "",
+      "startDate": "2026-06-12",
+      "endDate": "2026-08-12",
+      "ownerId": "u1",
+      "ownerName": "Augusto Silva",
+      "status": "active",
+      "priority": "high",
+      "members": [
+        {
+          "id": "u_augusto_godoi",
+          "name": "Augusto Godoi",
+          "initials": "AG"
+        }
+      ],
+      "tasks": [],
+      "updatedAt": "2026-06-12T13:39:50.346Z"
+    }
+  ]
+}
